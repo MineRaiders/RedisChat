@@ -23,10 +23,7 @@ import dev.unnm3d.redischat.datamanagers.sqlmanagers.SQLiteDataManager;
 import dev.unnm3d.redischat.discord.DiscordWebhook;
 import dev.unnm3d.redischat.discord.IDiscordHook;
 import dev.unnm3d.redischat.discord.SpicordHook;
-import dev.unnm3d.redischat.integrations.EssentialsVanishIntegration;
-import dev.unnm3d.redischat.integrations.OraxenTagResolver;
-import dev.unnm3d.redischat.integrations.PremiumVanishIntegration;
-import dev.unnm3d.redischat.integrations.SuperVanishIntegration;
+import dev.unnm3d.redischat.integrations.*;
 import dev.unnm3d.redischat.mail.MailGUIManager;
 import dev.unnm3d.redischat.mail.MailUniformCommand;
 import dev.unnm3d.redischat.moderation.MuteCommand;
@@ -239,6 +236,10 @@ public final class RedisChat extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("Essentials") != null) {
             getLogger().info("SuperVanish found, enabling integration");
             playerListManager.addVanishIntegration(new EssentialsVanishIntegration(this));
+        }
+        if (getServer().getPluginManager().getPlugin("SayanVanish") != null) {
+            getLogger().info("SayanVanish found, enabling integration");
+            playerListManager.addVanishIntegration(new SayanVanishIntegration());
         }
         if (getServer().getPluginManager().getPlugin("Spicord") != null && config.spicord.enabled()) {
             getLogger().info("Spicord found, enabling integration");
