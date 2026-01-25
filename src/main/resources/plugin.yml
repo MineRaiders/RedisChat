@@ -22,6 +22,7 @@ softdepend:
   - Spicord
   - PremiumVanish
   - SuperVanish
+  - SayanVanish
 loadbefore:
   - CMI
 commands:
