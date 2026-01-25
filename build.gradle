@@ -6,7 +6,7 @@ plugins {
 
 
 group = 'dev.unnm3d'
-version = '5.5.15'
+version = '5.5.16'
 
 
 repositories {
@@ -19,6 +19,7 @@ repositories {
     maven { url 'https://repo.maven.apache.org/maven2/' }
     maven { url "https://repo.william278.net/snapshots" }
     maven { url 'https://repo.essentialsx.net/releases/' }
+    maven { url "https://repo.sayandev.org/snapshots" }
 }
 
 dependencies {
@@ -54,6 +55,7 @@ dependencies {
     compileOnly 'com.github.MilkBowl:VaultAPI:1.7' exclude(group: 'org.bukkit', module: 'bukkit')
     compileOnly 'com.github.oraxen:oraxen:1.162.0'
     compileOnly 'com.github.LeonMangler:PremiumVanishAPI:2.8.8'
+    compileOnly "org.sayandev:sayanvanish-api:1.7.3-SNAPSHOT"
     compileOnly 'org.projectlombok:lombok:1.18.34'
     compileOnly 'org.spicord:spicord-common:5.7.2'
     compileOnly 'net.dv8tion:JDA:5.0.0-beta.16'
