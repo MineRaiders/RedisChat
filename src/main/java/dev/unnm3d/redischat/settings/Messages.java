@@ -90,6 +90,7 @@ public final class Messages {
     public String channelNotFound = "<red>Channel not found!</red>";
     public String channelNoPermission = "<red>You muted this channel or you don't have permission to talk! Check your /channels GUI</red>";
     public String channelNoFormat = "<red>Channel format not found! Use <click:suggest_command:'/channel setformat %channel%'><color:#33c5ff>[/channel setformat %channel%]</color></click> to set a format</red>";
+    public String itemShareNoPermission = "<yellow>RedisChat</yellow> <gray>»</gray> <red>You are not allowed to use item share</red>";
     @Comment("The text after the /msg command (example: /msg <player> <message> will be -> /msg <user> <message>")
     public String msgPlayerSuggestion = "player";
     @Comment("The text after the /msg command (example: /msg <player> <message> will be -> /msg <player> <text>")

@@ -44,7 +44,7 @@ public class ItemNameProvider {
                 default -> value.toString();
             };
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
+            return itemMeta.getDisplayName();
         }
     }
 
@@ -58,7 +58,7 @@ public class ItemNameProvider {
             Object value = hasItemNameMethod.invoke(itemMeta.getItemMeta());
             return value instanceof Boolean bool ? bool : itemMeta.getItemMeta().hasDisplayName();
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
+            return itemMeta.getItemMeta().hasDisplayName();
         }
     }
 }

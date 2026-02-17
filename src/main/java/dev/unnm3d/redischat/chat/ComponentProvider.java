@@ -197,10 +197,20 @@ public class ComponentProvider {
                 text = text.replace(stringStringEntry.getKey(), stringStringEntry.getValue());
             }
         }
+        String formatted = invShareFormatting(cmdSender, text);
+        if (formatted.contains("<" + plugin.config.item_tag + ">")
+                && (!cmdSender.hasPermission(Permissions.USE_ITEM.getPermission()) || !(cmdSender instanceof Player))) {
+            sendItemShareNoPermission(cmdSender);
+            return Component.empty();
+        }
         return parse(cmdSender,
-                invShareFormatting(cmdSender, text),
+                formatted,
                 cmdSender.hasPermission(Permissions.USE_FORMATTING.getPermission()),
-                true, cmdSender.hasPermission(Permissions.CLICKABLE_LINKS.getPermission()), getRedisChatTagResolver(cmdSender));
+                true, cmdSender.hasPermission(Permissions.CLICKABLE_LINKS.getPermission()), getRedisChatTagResolver(cmdSender, formatted));
+    }
+
+    private void sendItemShareNoPermission(@NotNull CommandSender sender) {
+        sendMessage(sender, miniMessage.deserialize(plugin.messages.itemShareNoPermission));
     }
 
     /**
@@ -220,11 +230,11 @@ public class ComponentProvider {
      * @param player The player to get the tag resolver for
      * @return The tag resolver
      */
-    public @NotNull TagResolver getRedisChatTagResolver(@NotNull CommandSender player) {
+    public @NotNull TagResolver getRedisChatTagResolver(@NotNull CommandSender player, @NotNull String message) {
 
         final TagResolver.Builder builder = TagResolver.builder();
 
-        if (player.hasPermission(Permissions.USE_INVENTORY.getPermission())) {
+        if (player.hasPermission(Permissions.USE_INVENTORY.getPermission()) && message.contains("<" + plugin.config.inv_tag + ">")) {
             String toParseInventory = plugin.config.inventoryFormat
                     .replace("%player%", player.getName())
                     .replace("%command%", "/invshare " + player.getName() + "-inventory");
@@ -233,7 +243,9 @@ public class ComponentProvider {
             builder.resolver(inv);
         }
 
-        if (player.hasPermission(Permissions.USE_ITEM.getPermission()) && player instanceof Player p) {
+        if (player.hasPermission(Permissions.USE_ITEM.getPermission())
+                && player instanceof Player p
+                && message.contains("<" + plugin.config.item_tag + ">")) {
             String toParseItem = plugin.config.itemFormat
                     .replace("%player%", player.getName())
                     .replace("%command%", "/invshare " + player.getName() + "-item");
@@ -250,7 +262,8 @@ public class ComponentProvider {
             builder.resolver(Placeholder.component(plugin.config.item_tag, toParseItemComponent));
         }
 
-        if (player.hasPermission(Permissions.USE_ENDERCHEST.getPermission())) {
+        if (player.hasPermission(Permissions.USE_ENDERCHEST.getPermission())
+                && message.contains("<" + plugin.config.ec_tag + ">")) {
             String toParseEnderChest = plugin.config.enderChestFormat
                     .replace("%player%", player.getName())
                     .replace("%command%", "/invshare " + player.getName() + "-enderchest");
