@@ -69,7 +69,10 @@ permissions:
     description: Allows to mute channels
     default: op
   redischat.joinquit:
-    description: Allows to see the join and quit messages
+    description: Allows to broadcast the join and quit messages for the player
+    default: true
+  redischat.joinquit.sound:
+    description: Allows to hear join and quit sounds
     default: true
   redischat.use_emoji:
     description: Allows to see the item in the chat
@@ -190,6 +193,7 @@ permissions:
       - redischat.chatcolorcommand
       - redischat.ignore_whitelist
       - redischat.ignore_whitelist.other
+      - redischat.joinquit.sound
   redischat.default:
     description: Allows you to use default commands
     default: true

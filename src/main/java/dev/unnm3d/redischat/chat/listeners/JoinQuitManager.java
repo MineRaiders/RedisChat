@@ -27,7 +27,7 @@ public class JoinQuitManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onJoin(PlayerJoinEvent joinEvent) {
-        joinEvent.setJoinMessage(null);
+        joinEvent.joinMessage(null);
 
         if (redisChat.getPlayerListManager().isVanished(joinEvent.getPlayer())) return;
 
@@ -38,6 +38,7 @@ public class JoinQuitManager implements Listener {
         if (redisChat.getPlayerListManager().getPlayerList(joinEvent.getPlayer())
                 .contains(joinEvent.getPlayer().getName())) return;
 
+        if (!joinEvent.getPlayer().hasPermission(Permissions.JOIN_QUIT.getPermission())) return;
 
         if (!joinEvent.getPlayer().hasPlayedBefore() && !redisChat.config.first_join_message.isEmpty()) {
             redisChat.getDataManager().sendChatMessage(new ChatMessage(
@@ -46,7 +47,7 @@ public class JoinQuitManager implements Listener {
                             redisChat.config.first_join_message,
                             true,
                             false,
-                            false))
+                            false)), Permissions.JOIN_QUIT.getPermission()
             ));
             return;
         }
@@ -74,9 +75,10 @@ public class JoinQuitManager implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onQuit(PlayerQuitEvent quitEvent) {
-        quitEvent.setQuitMessage(null);
+        quitEvent.quitMessage(null);
 
         if (redisChat.getPlayerListManager().isVanished(quitEvent.getPlayer())) return;
+        if (!quitEvent.getPlayer().hasPermission(Permissions.JOIN_QUIT.getPermission())) return;
 
         //Get quit message
         final ChatFormat chatFormat = redisChat.config.getChatFormat(quitEvent.getPlayer());

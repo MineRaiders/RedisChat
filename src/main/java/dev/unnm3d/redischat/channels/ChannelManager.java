@@ -28,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import xyz.xenondevs.invui.window.Window;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,6 +45,7 @@ public class ChannelManager extends RedisChatAPI {
     @Getter
     private final ChannelGUI channelGUI;
     private static final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private static final Pattern SOUND_TAG_PATTERN = Pattern.compile("<sound:[^>]+>", Pattern.CASE_INSENSITIVE);
 
 
     public ChannelManager(RedisChat plugin) {
@@ -359,8 +361,13 @@ public class ChannelManager extends RedisChatAPI {
                 }
             }
 
+            final ChatMessage messageToSend = result.message();
+            String contentToSend = messageToSend.getContent();
+            if (shouldStripJoinQuitSound(recipient, messageToSend)) {
+                contentToSend = SOUND_TAG_PATTERN.matcher(contentToSend).replaceAll("");
+            }
             getComponentProvider().sendComponentOrCache(recipient,
-                    miniMessage.deserialize(result.message().getFormat().replace("{message}", chatMessage.getContent()))
+                    miniMessage.deserialize(messageToSend.getFormat().replace("{message}", contentToSend))
             );
         }
         if (chatMessage.getReceiver().isPlayer()) {
@@ -377,6 +384,13 @@ public class ChannelManager extends RedisChatAPI {
                     .forEach(player -> plugin.getComponentProvider().sendComponentOrCache(player, spyComponent));
         }
 
+    }
+
+    private boolean shouldStripJoinQuitSound(@NotNull CommandSender recipient, @NotNull ChatMessage message) {
+        if (recipient.hasPermission(Permissions.JOIN_QUIT_SOUND.getPermission())) {
+            return false;
+        }
+        return message.getReceiver().getPermissions().contains(Permissions.JOIN_QUIT.getPermission());
     }
 
     private boolean checkProximity(Player recipient, ChatMessage chatMessage) {

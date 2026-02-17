@@ -26,6 +26,9 @@ public class PermissionFilter extends AbstractFilter<FiltersConfig.FilterSetting
         }
 
         for (String permission : chatMessage.getReceiver().getPermissions()) {
+            if (Permissions.JOIN_QUIT.getPermission().equals(permission)) {
+                continue;
+            }
             if (!receiver.hasPermission(permission)) {
                 return new FilterResult(chatMessage, true);
             }
