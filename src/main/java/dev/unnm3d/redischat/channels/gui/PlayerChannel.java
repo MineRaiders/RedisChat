@@ -5,6 +5,8 @@ import dev.unnm3d.redischat.RedisChat;
 import dev.unnm3d.redischat.api.objects.KnownChatEntities;
 import dev.unnm3d.redischat.api.objects.Channel;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -66,9 +68,12 @@ public class PlayerChannel extends AbstractItem {
         }
 
         final ItemMeta im = item.getItemMeta();
-        if (im != null)
-            im.setDisplayName("§r" + RedisChat.getInstance().getComponentProvider()
-                    .replaceAmpersandCodesWithSection(channel.getDisplayName()));
+        if (im != null) {
+            Component displayComponent = RedisChat.getInstance().getComponentProvider()
+                    .parse(player, channel.getDisplayName(), true, false, false);
+            String displayName = LegacyComponentSerializer.legacySection().serialize(displayComponent);
+            im.setDisplayName(displayName);
+        }
         item.setItemMeta(im);
         return new ItemBuilder(item);
     }

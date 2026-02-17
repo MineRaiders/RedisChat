@@ -178,8 +178,9 @@ public class ComponentProvider {
     }
 
     public Component parseChatMessageFormat(@NotNull CommandSender cmdSender, @NotNull String text) {
+        String expanded = expandPlaceholdersRaw(cmdSender, text);
         Component component = parsePlaceholders(cmdSender, parseResolverIntegrations(
-                parseLegacy(text, true)), this.standardTagResolver);
+                parseLegacy(expanded, true)), this.standardTagResolver);
 
         for (Map.Entry<String, String> replacementEntry : plugin.config.components.entrySet()) {
             component = component.replaceText(rBuilder -> rBuilder
@@ -189,6 +190,13 @@ public class ComponentProvider {
                                     parseLegacy(replacementEntry.getValue(), true)), this.standardTagResolver)));
         }
         return component;
+    }
+
+    private String expandPlaceholdersRaw(@NotNull CommandSender cmdSender, @NotNull String text) {
+        if (cmdSender instanceof OfflinePlayer offlinePlayer) {
+            return PlaceholderAPI.setPlaceholders(offlinePlayer, text);
+        }
+        return PlaceholderAPI.setPlaceholders(null, text);
     }
 
     public Component parseChatMessageContent(@NotNull CommandSender cmdSender, @NotNull String text) {

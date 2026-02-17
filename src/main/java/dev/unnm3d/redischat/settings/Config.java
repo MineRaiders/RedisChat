@@ -321,21 +321,33 @@ public final class Config implements ConfigValidator {
             "World channels (disabled by default).",
             "When enabled, players will be switched to the channel bound to their current world.",
             "Messages sent in a world-bound channel are only delivered to players in that world.",
-            "If autoCreate is enabled, missing channels will be created using the template."
+            "If autoCreate is enabled, missing channels will be created using the template.",
+            "autoCreatePrefixes supports prefix strings (you can also use a trailing '*' like 'raid_*').",
+            "localOnly makes auto-created channels local to this server only (not stored in Redis).",
+            "usePlayerFormats wraps the template format around the per-permission player format.",
+            "useWorldFormats wraps the template format around the per-permission world format list.",
+            "When both usePlayerFormats and useWorldFormats are true, world formats take precedence."
     })
     public WorldChannelSettings worldChannels = new WorldChannelSettings(
             false,
             false,
+            false,
+            false,
+            false,
+            List.of(),
             Map.of(),
             new WorldChannelTemplate(
-                    "<gold>[%world%]</gold>",
-                    "<gray>[%world%]</gray> {message}",
+                    "§6[%world%]",
+                    "<gray>[%world%]</gray>%luckperms_prefix%%player <dark_gray>>></dark_gray> <gray>{message}</gray>",
                     5,
                     3,
                     true,
-                    true,
+                    false,
+                    false,
                     ""
-            )
+            ),
+            List.of(),
+            defaultFormat
     );
 
     @Override
@@ -345,6 +357,10 @@ public final class Config implements ConfigValidator {
             worldChannels = new WorldChannelSettings(
                     false,
                     false,
+                    false,
+                    false,
+                    false,
+                    List.of(),
                     Map.of(),
                     new WorldChannelTemplate(
                             "<gold>[%world%]</gold>",
@@ -353,10 +369,129 @@ public final class Config implements ConfigValidator {
                             3,
                             true,
                             true,
+                            false,
                             ""
-                    )
+                    ),
+                    List.of(),
+                    defaultFormat
             );
             modified = true;
+        } else {
+            boolean worldChannelsChanged = false;
+            boolean localOnly = worldChannels.localOnly();
+            boolean usePlayerFormats = worldChannels.usePlayerFormats();
+            boolean useWorldFormats = worldChannels.useWorldFormats();
+            List<String> prefixes = worldChannels.autoCreatePrefixes();
+            if (prefixes == null) {
+                prefixes = List.of();
+                worldChannelsChanged = true;
+            }
+            Map<String, String> bindings = worldChannels.bindings();
+            if (bindings == null) {
+                bindings = Map.of();
+                worldChannelsChanged = true;
+            }
+            WorldChannelTemplate template = worldChannels.template();
+            if (template == null) {
+                template = new WorldChannelTemplate(
+                        "<gold>[%world%]</gold>",
+                        "<gray>[%world%]</gray> {message}",
+                        5,
+                        3,
+                        true,
+                        true,
+                        false,
+                        ""
+                );
+                worldChannelsChanged = true;
+            }
+
+            List<ChatFormat> worldFormats = worldChannels.formats();
+            if (worldFormats == null) {
+                worldFormats = List.of();
+                worldChannelsChanged = true;
+            }
+
+            ChatFormat worldDefaultFormat = worldChannels.defaultFormat();
+            if (worldDefaultFormat == null) {
+                worldDefaultFormat = defaultFormat;
+                worldChannelsChanged = true;
+            } else {
+                String permission = worldDefaultFormat.permission() != null ? worldDefaultFormat.permission() : defaultFormat.permission();
+                String messageFormat = worldDefaultFormat.format() != null ? worldDefaultFormat.format() : defaultFormat.format();
+                String privateFormat = worldDefaultFormat.private_format() != null ? worldDefaultFormat.private_format() : defaultFormat.private_format();
+                String receivePrivateFormat = worldDefaultFormat.receive_private_format() != null ? worldDefaultFormat.receive_private_format() : defaultFormat.receive_private_format();
+                String mentionFormat = worldDefaultFormat.mention_format() != null ? worldDefaultFormat.mention_format() : defaultFormat.mention_format();
+                String linkFormat = worldDefaultFormat.link_format() != null ? worldDefaultFormat.link_format() : defaultFormat.link_format();
+                String joinFormat = worldDefaultFormat.join_format() != null ? worldDefaultFormat.join_format() : defaultFormat.join_format();
+                String quitFormat = worldDefaultFormat.quit_format() != null ? worldDefaultFormat.quit_format() : defaultFormat.quit_format();
+
+                if (!Objects.equals(permission, worldDefaultFormat.permission())
+                        || !Objects.equals(messageFormat, worldDefaultFormat.format())
+                        || !Objects.equals(privateFormat, worldDefaultFormat.private_format())
+                        || !Objects.equals(receivePrivateFormat, worldDefaultFormat.receive_private_format())
+                        || !Objects.equals(mentionFormat, worldDefaultFormat.mention_format())
+                        || !Objects.equals(linkFormat, worldDefaultFormat.link_format())
+                        || !Objects.equals(joinFormat, worldDefaultFormat.join_format())
+                        || !Objects.equals(quitFormat, worldDefaultFormat.quit_format())) {
+                    worldDefaultFormat = new ChatFormat(permission, messageFormat, privateFormat, receivePrivateFormat,
+                            mentionFormat, linkFormat, joinFormat, quitFormat);
+                    worldChannelsChanged = true;
+                }
+            }
+
+            boolean worldFormatsChanged = false;
+            List<ChatFormat> normalizedWorldFormats = new ArrayList<>(worldFormats.size());
+            for (ChatFormat format : worldFormats) {
+                if (format == null) {
+                    normalizedWorldFormats.add(worldDefaultFormat);
+                    worldFormatsChanged = true;
+                    continue;
+                }
+                String permission = format.permission() != null ? format.permission() : worldDefaultFormat.permission();
+                String messageFormat = format.format() != null ? format.format() : worldDefaultFormat.format();
+                String privateFormat = format.private_format() != null ? format.private_format() : worldDefaultFormat.private_format();
+                String receivePrivateFormat = format.receive_private_format() != null ? format.receive_private_format() : worldDefaultFormat.receive_private_format();
+                String mentionFormat = format.mention_format() != null ? format.mention_format() : worldDefaultFormat.mention_format();
+                String linkFormat = format.link_format() != null ? format.link_format() : worldDefaultFormat.link_format();
+                String joinFormat = format.join_format() != null ? format.join_format() : worldDefaultFormat.join_format();
+                String quitFormat = format.quit_format() != null ? format.quit_format() : worldDefaultFormat.quit_format();
+
+                if (!Objects.equals(permission, format.permission())
+                        || !Objects.equals(messageFormat, format.format())
+                        || !Objects.equals(privateFormat, format.private_format())
+                        || !Objects.equals(receivePrivateFormat, format.receive_private_format())
+                        || !Objects.equals(mentionFormat, format.mention_format())
+                        || !Objects.equals(linkFormat, format.link_format())
+                        || !Objects.equals(joinFormat, format.join_format())
+                        || !Objects.equals(quitFormat, format.quit_format())) {
+                    worldFormatsChanged = true;
+                }
+
+                normalizedWorldFormats.add(new ChatFormat(permission, messageFormat, privateFormat, receivePrivateFormat,
+                        mentionFormat, linkFormat, joinFormat, quitFormat));
+            }
+
+            if (worldFormatsChanged) {
+                worldFormats = List.copyOf(normalizedWorldFormats);
+                worldChannelsChanged = true;
+            }
+
+            if (worldChannelsChanged) {
+                worldChannels = new WorldChannelSettings(
+                        worldChannels.enabled(),
+                        worldChannels.autoCreate(),
+                        localOnly,
+                        usePlayerFormats,
+                        useWorldFormats,
+                        prefixes,
+                        bindings,
+                        template,
+                        worldFormats,
+                        worldDefaultFormat
+                );
+                modified = true;
+            }
         }
         if (formats == null) {
             formats = List.of();
@@ -524,8 +659,14 @@ public final class Config implements ConfigValidator {
     public record WorldChannelSettings(
             boolean enabled,
             boolean autoCreate,
+            boolean localOnly,
+            boolean usePlayerFormats,
+            boolean useWorldFormats,
+            List<String> autoCreatePrefixes,
             Map<String, String> bindings,
-            WorldChannelTemplate template
+            WorldChannelTemplate template,
+            List<ChatFormat> formats,
+            ChatFormat defaultFormat
     ) {
     }
 
@@ -536,6 +677,7 @@ public final class Config implements ConfigValidator {
             int rateLimitPeriod,
             boolean filtered,
             boolean shownByDefault,
+            boolean permissionEnabled,
             String notificationSound
     ) {
     }
@@ -546,6 +688,21 @@ public final class Config implements ConfigValidator {
                 .filter(format -> p.hasPermission(format.permission()))
                 .findFirst()
                 .orElse(defaultFormat);
+    }
+
+    public @NotNull ChatFormat getWorldChatFormat(@Nullable CommandSender p) {
+        ChatFormat fallback = defaultFormat;
+        if (worldChannels != null && worldChannels.defaultFormat() != null) {
+            fallback = worldChannels.defaultFormat();
+        }
+        if (p == null) return fallback;
+        if (worldChannels == null || worldChannels.formats() == null || worldChannels.formats().isEmpty()) {
+            return fallback;
+        }
+        return worldChannels.formats().stream()
+                .filter(format -> p.hasPermission(format.permission()))
+                .findFirst()
+                .orElse(fallback);
     }
 
     public String[] getCommandAliases(String command) {

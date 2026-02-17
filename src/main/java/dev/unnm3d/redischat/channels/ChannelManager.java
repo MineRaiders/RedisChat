@@ -40,6 +40,9 @@ public class ChannelManager extends RedisChatAPI {
     private final ConcurrentHashMap<String, Channel> registeredChannels;
     private final ConcurrentHashMap<String, String> activePlayerChannels;
     private final ConcurrentHashMap<String, String> worldChannelBindings;
+    private Config.WorldChannelSettings worldChannelSettings;
+    private final ConcurrentHashMap<String, Channel> localChannels;
+    private final Set<String> localWorldChannels;
     @Getter
     private final MuteManager muteManager;
     @Getter
@@ -56,6 +59,8 @@ public class ChannelManager extends RedisChatAPI {
         this.registeredChannels = new ConcurrentHashMap<>();
         this.activePlayerChannels = new ConcurrentHashMap<>();
         this.worldChannelBindings = new ConcurrentHashMap<>();
+        this.localChannels = new ConcurrentHashMap<>();
+        this.localWorldChannels = ConcurrentHashMap.newKeySet();
         this.muteManager = new MuteManager(plugin);
         this.filterManager = new FilterManager(plugin);
         this.channelGUI = new ChannelGUI(plugin);
@@ -70,6 +75,7 @@ public class ChannelManager extends RedisChatAPI {
                     if (plugin.config.debug)
                         channels.forEach(ch -> plugin.getLogger().info("Channel: " + ch.getName()));
                     channels.forEach(channel -> registeredChannels.put(channel.getName(), channel));
+                    localChannels.forEach(registeredChannels::put);
                 });
     }
 
@@ -92,6 +98,16 @@ public class ChannelManager extends RedisChatAPI {
     public void registerChannel(Channel channel) {
         registeredChannels.put(channel.getName(), channel);
         plugin.getDataManager().registerChannel(channel);
+    }
+
+    public void registerLocalChannel(@NotNull Channel channel) {
+        localChannels.put(channel.getName(), channel);
+        registeredChannels.put(channel.getName(), channel);
+    }
+
+    public void unregisterLocalChannel(@NotNull String channelName) {
+        localChannels.remove(channelName);
+        registeredChannels.remove(channelName);
     }
 
     public void updateChannel(String channelName, @Nullable Channel channel) {
@@ -147,9 +163,11 @@ public class ChannelManager extends RedisChatAPI {
      */
     public void outgoingMessage(CommandSender player, Channel currentChannel, @NotNull String message) {
 
+        String channelFormat = resolveChannelFormat(player, currentChannel);
+
         ChatMessage chatMessage = new ChatMessage(
                 new ChannelAudience(AudienceType.PLAYER, player.getName()),
-                currentChannel.getFormat(),
+                channelFormat,
                 message,
                 currentChannel
         );
@@ -428,6 +446,41 @@ public class ChannelManager extends RedisChatAPI {
         return hasWorldBinding;
     }
 
+    private String resolveChannelFormat(@NotNull CommandSender player, @NotNull Channel channel) {
+        String channelFormat = channel.getFormat();
+        if (worldChannelSettings == null || !worldChannelSettings.enabled()) {
+            return channelFormat;
+        }
+        if (!isWorldChannelName(channel.getName())) {
+            return channelFormat;
+        }
+        if (worldChannelSettings.useWorldFormats()) {
+            return wrapChannelFormat(channelFormat, plugin.config.getWorldChatFormat(player).format());
+        }
+        if (worldChannelSettings.usePlayerFormats()) {
+            return wrapChannelFormat(channelFormat, plugin.config.getChatFormat(player).format());
+        }
+        return channelFormat;
+    }
+
+    private String wrapChannelFormat(@NotNull String channelFormat, @NotNull String baseFormat) {
+        return channelFormat.contains("{message}")
+                ? channelFormat.replace("{message}", baseFormat)
+                : baseFormat;
+    }
+
+    private boolean isWorldChannelName(@NotNull String channelName) {
+        if (localWorldChannels.contains(channelName)) {
+            return true;
+        }
+        for (String value : worldChannelBindings.values()) {
+            if (value.equalsIgnoreCase(channelName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public void pauseChat(@NotNull Player player) {
         getComponentProvider().pauseChat(player);
@@ -456,6 +509,10 @@ public class ChannelManager extends RedisChatAPI {
     @Override
     public Optional<Channel> getRegisteredChannel(@Nullable String channelName) {
         if (channelName == null) return Optional.empty();
+        Channel local = localChannels.get(channelName);
+        if (local != null) {
+            return Optional.of(local);
+        }
         return Optional.ofNullable(registeredChannels.get(channelName));
     }
 
@@ -496,6 +553,10 @@ public class ChannelManager extends RedisChatAPI {
 
     @Override
     public void setActiveChannel(String playerName, String channelName) {
+        if (localChannels.containsKey(channelName)) {
+            updateActiveChannel(playerName, channelName);
+            return;
+        }
         updateActiveChannel(playerName, channelName);
         plugin.getDataManager().setActivePlayerChannel(playerName, channelName);
     }
@@ -547,6 +608,7 @@ public class ChannelManager extends RedisChatAPI {
     }
 
     public void applyWorldChannel(@NotNull Player player) {
+        ensureAutoCreatedWorldChannel(player.getWorld().getName());
         getWorldChannel(player.getWorld().getName()).ifPresent(channelName -> {
             if (getChannel(channelName, player).isEmpty()) {
                 if (plugin.config.debug) {
@@ -564,13 +626,16 @@ public class ChannelManager extends RedisChatAPI {
 
     public void applyWorldChannelConfig(@Nullable Config.WorldChannelSettings settings) {
         worldChannelBindings.clear();
+        this.worldChannelSettings = settings;
+        localWorldChannels.forEach(this::unregisterLocalChannel);
+        localWorldChannels.clear();
         if (settings == null || !settings.enabled()) {
             return;
         }
 
         Map<String, String> bindings = settings.bindings();
-        if (bindings == null || bindings.isEmpty()) {
-            return;
+        if (bindings == null) {
+            bindings = Map.of();
         }
 
         Config.WorldChannelTemplate template = settings.template();
@@ -588,46 +653,104 @@ public class ChannelManager extends RedisChatAPI {
                 boolean isDefaultChannel = KnownChatEntities.GENERAL_CHANNEL.toString().equalsIgnoreCase(channelName)
                         || KnownChatEntities.STAFFCHAT_CHANNEL_NAME.toString().equalsIgnoreCase(channelName);
                 if (!isDefaultChannel && getRegisteredChannel(channelName).isEmpty()) {
-                    Config.WorldChannelTemplate activeTemplate = template != null ? template : new Config.WorldChannelTemplate(
-                            "<gold>[%world%]</gold>",
-                            "<gray>[%world%]</gray> {message}",
-                            5,
-                            3,
-                            true,
-                            true,
-                            ""
-                    );
-                    String displayName = activeTemplate.displayName()
-                            .replace("%world%", worldName)
-                            .replace("%channel%", channelName);
-                    String format = activeTemplate.format()
-                            .replace("%world%", worldName)
-                            .replace("%channel%", channelName);
-                    String notificationSound = activeTemplate.notificationSound();
-                    if (notificationSound != null && notificationSound.isBlank()) {
-                        notificationSound = null;
-                    }
-                    Channel channel = Channel.builder(channelName)
-                            .displayName(displayName)
-                            .format(format)
-                            .rateLimit(activeTemplate.rateLimit())
-                            .rateLimitPeriod(activeTemplate.rateLimitPeriod())
-                            .filtered(activeTemplate.filtered())
-                            .shownByDefault(activeTemplate.shownByDefault())
-                            .notificationSound(notificationSound)
-                            .build();
-                    registerChannel(channel);
+                    createChannelFromTemplate(settings, template, worldName, channelName);
                 }
             }
 
             worldChannelBindings.put(normalizeWorldName(worldName), channelName);
         }
+
+        if (settings.autoCreate() && settings.autoCreatePrefixes() != null && !settings.autoCreatePrefixes().isEmpty()) {
+            plugin.getServer().getWorlds().forEach(world -> ensureAutoCreatedWorldChannel(world.getName()));
+        }
+    }
+
+    private void createChannelFromTemplate(@NotNull Config.@Nullable WorldChannelSettings settings, Config.WorldChannelTemplate template, String worldName, String channelName) {
+        Config.WorldChannelTemplate activeTemplate = template != null ? template : new Config.WorldChannelTemplate(
+                "<gold>[%world%]</gold>",
+                "<gray>[%world%]</gray> {message}",
+                5,
+                3,
+                true,
+                true,
+                false,
+                ""
+        );
+        String displayName = activeTemplate.displayName()
+                .replace("%world%", worldName)
+                .replace("%channel%", channelName);
+        String format = activeTemplate.format()
+                .replace("%world%", worldName)
+                .replace("%channel%", channelName);
+        String notificationSound = activeTemplate.notificationSound();
+        if (notificationSound != null && notificationSound.isBlank()) {
+            notificationSound = null;
+        }
+        Channel channel = Channel.builder(channelName)
+                .displayName(displayName)
+                .format(format)
+                .rateLimit(activeTemplate.rateLimit())
+                .rateLimitPeriod(activeTemplate.rateLimitPeriod())
+                .filtered(activeTemplate.filtered())
+                .shownByDefault(activeTemplate.shownByDefault())
+                .permissionEnabled(activeTemplate.permissionEnabled())
+                .notificationSound(notificationSound)
+                .build();
+        if (settings.localOnly()) {
+            registerLocalChannel(channel);
+            localWorldChannels.add(channelName);
+        } else {
+            registerChannel(channel);
+        }
+    }
+
+    private boolean ensureAutoCreatedWorldChannel(@NotNull String worldName) {
+        if (worldChannelSettings == null || !worldChannelSettings.enabled()) {
+            return false;
+        }
+        String normalizedWorld = normalizeWorldName(worldName);
+        if (worldChannelBindings.containsKey(normalizedWorld)) {
+            return true;
+        }
+        if (!worldChannelSettings.autoCreate()) {
+            return false;
+        }
+
+        List<String> prefixes = worldChannelSettings.autoCreatePrefixes();
+        if (prefixes == null || prefixes.isEmpty()) {
+            return false;
+        }
+
+        boolean matches = prefixes.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(prefix -> !prefix.isEmpty())
+                .map(prefix -> prefix.contains("*") ? prefix.substring(0, prefix.indexOf('*')) : prefix)
+                .anyMatch(prefix -> normalizedWorld.startsWith(prefix.toLowerCase(Locale.ROOT)));
+
+        if (!matches) {
+            return false;
+        }
+
+        String channelName = worldName;
+        if (!KnownChatEntities.GENERAL_CHANNEL.toString().equalsIgnoreCase(channelName)
+                && !KnownChatEntities.STAFFCHAT_CHANNEL_NAME.toString().equalsIgnoreCase(channelName)) {
+            if (getRegisteredChannel(channelName).isEmpty()) {
+                Config.WorldChannelTemplate template = worldChannelSettings.template();
+                createChannelFromTemplate(worldChannelSettings, template, worldName, channelName);
+            }
+        }
+
+        worldChannelBindings.put(normalizeWorldName(worldName), channelName);
+        return true;
     }
 
     public List<Channel> getAllChannels() {
         List<Channel> channels = new ArrayList<>();
         channels.add(getStaffChatChannel());
-        channels.addAll(registeredChannels.values());
+        Map<String, Channel> all = new LinkedHashMap<>(registeredChannels);
+        all.putAll(localChannels);
+        channels.addAll(all.values());
         return channels;
     }
 
