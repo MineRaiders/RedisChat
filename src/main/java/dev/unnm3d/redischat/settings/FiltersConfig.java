@@ -35,6 +35,9 @@ public final class FiltersConfig {
     @Comment({"Filters outgoing channel messages: Replace dangerous tags with safer ones",
             "and checks if the player has permission to use them"})
     public FilterSettings tags = DefaultSettings.TAGS.getFilterSettings();
+    @Comment({"Filters outgoing messages: Blocks links unless the sender has permission",
+            "or the link is whitelisted in config"})
+    public FilterSettings links = DefaultSettings.LINKS.getFilterSettings();
     public WordBlacklistFilter.WordBlacklistFilterProperties words = (WordBlacklistFilter.WordBlacklistFilterProperties) DefaultSettings.WORDS.getFilterSettings();
 
 

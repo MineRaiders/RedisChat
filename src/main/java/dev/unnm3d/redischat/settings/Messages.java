@@ -85,6 +85,8 @@ public final class Messages {
     public String channelForceListen = "<yellow>RedisChat</yellow> <gray>»</gray> <green>You forced %player% to talk inside %channel%!</green>";
     public String channelTalk = "<yellow>RedisChat</yellow> <gray>»</gray> <green>You are now talking on %channel%!</green>";
     public String messageContainsBadWords = "<yellow>RedisChat</yellow> <gray>»</gray> <red>Your message contains bad words: %words%</red>";
+    @Comment("%links% is the list of blocked links (separated by commas)")
+    public String linkNotAllowed = "<yellow>RedisChat</yellow> <gray>»</gray> <red>You are not allowed to send links: %links%</red>";
     public String channelNotFound = "<red>Channel not found!</red>";
     public String channelNoPermission = "<red>You muted this channel or you don't have permission to talk! Check your /channels GUI</red>";
     public String channelNoFormat = "<red>Channel format not found! Use <click:suggest_command:'/channel setformat %channel%'><color:#33c5ff>[/channel setformat %channel%]</color></click> to set a format</red>";

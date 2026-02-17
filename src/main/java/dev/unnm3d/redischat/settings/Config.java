@@ -181,6 +181,9 @@ public final class Config implements ConfigValidator {
             "(?i)卍",
             "(?i)♿"
     );
+    @Comment({"Links whitelist (regex patterns). Players without permission can still send these links.",
+            "Matches against the full URL with or without the scheme (http/https)."})
+    public List<String> link_whitelist = List.of();
 
     @Comment({
             "Announcer configurations",
