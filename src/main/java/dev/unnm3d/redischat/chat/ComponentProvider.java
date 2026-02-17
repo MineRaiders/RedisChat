@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 
 @AllArgsConstructor
 public class ComponentProvider {
-    private static final Pattern PERCENTAGE_PLACEHOLDER_PATTERN = Pattern.compile("([%][^%]+[%])");
+    private static final Pattern PERCENTAGE_PLACEHOLDER_PATTERN = Pattern.compile("(%[^%]+%)");
     private static final Pattern URL_PATTERN = Pattern.compile("((?:https?://)?[a-zA-Z0-9.]+\\.[a-zA-Z0-9]{2,32})([a-zA-Z0-9/?.%=\\-_&]*)");
     private final RedisChat plugin;
     private final MiniMessage miniMessage;
@@ -200,7 +200,7 @@ public class ComponentProvider {
         return parse(cmdSender,
                 invShareFormatting(cmdSender, text),
                 cmdSender.hasPermission(Permissions.USE_FORMATTING.getPermission()),
-                true, true, getRedisChatTagResolver(cmdSender));
+                true, cmdSender.hasPermission(Permissions.CLICKABLE_LINKS.getPermission()), getRedisChatTagResolver(cmdSender));
     }
 
     /**
@@ -462,4 +462,3 @@ public class ComponentProvider {
     }
 
 }
-
