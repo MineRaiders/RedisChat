@@ -176,6 +176,38 @@ public abstract class RedisChatAPI {
     public abstract String getActiveChannel(String playerName);
 
     /**
+     * Bind a world to a channel. When a player joins or switches to that world,
+     * the channel will be set as active automatically.
+     *
+     * @param worldName The world name
+     * @param channel   The channel to register and bind
+     */
+    public abstract void setWorldChannel(@NotNull String worldName, @NotNull Channel channel);
+
+    /**
+     * Bind a world to an already registered channel by name.
+     *
+     * @param worldName   The world name
+     * @param channelName The channel name
+     */
+    public abstract void setWorldChannel(@NotNull String worldName, @NotNull String channelName);
+
+    /**
+     * Get the bound channel name for a world.
+     *
+     * @param worldName The world name
+     * @return The bound channel name, if any
+     */
+    public abstract Optional<String> getWorldChannel(@NotNull String worldName);
+
+    /**
+     * Remove the bound channel for a world.
+     *
+     * @param worldName The world name
+     */
+    public abstract void clearWorldChannel(@NotNull String worldName);
+
+    /**
      * Add vanish "canSee" integration
      *
      * @param vanishIntegration The vanish integration

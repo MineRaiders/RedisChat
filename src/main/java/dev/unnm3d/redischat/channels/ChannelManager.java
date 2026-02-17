@@ -38,6 +38,7 @@ public class ChannelManager extends RedisChatAPI {
     @Getter
     private final ConcurrentHashMap<String, Channel> registeredChannels;
     private final ConcurrentHashMap<String, String> activePlayerChannels;
+    private final ConcurrentHashMap<String, String> worldChannelBindings;
     @Getter
     private final MuteManager muteManager;
     @Getter
@@ -53,6 +54,7 @@ public class ChannelManager extends RedisChatAPI {
         this.plugin = plugin;
         this.registeredChannels = new ConcurrentHashMap<>();
         this.activePlayerChannels = new ConcurrentHashMap<>();
+        this.worldChannelBindings = new ConcurrentHashMap<>();
         this.muteManager = new MuteManager(plugin);
         this.filterManager = new FilterManager(plugin);
         this.channelGUI = new ChannelGUI(plugin);
@@ -332,6 +334,10 @@ public class ChannelManager extends RedisChatAPI {
                 continue;
             }
 
+            if (isWorldChannelMismatch(recipient, chatMessage)) {
+                continue;
+            }
+
             //If proximity is enabled, check if player is in range
             if (!checkProximity(recipient, chatMessage)) {
                 continue;
@@ -404,6 +410,21 @@ public class ChannelManager extends RedisChatAPI {
         if (sender.isEmpty()) return false;
         if (!sender.get().getWorld().equals(recipient.getWorld())) return false;
         return sender.get().getLocation().distance(recipient.getLocation()) < chatMessage.getReceiver().getProximityDistance();
+    }
+
+    private boolean isWorldChannelMismatch(@NotNull Player recipient, @NotNull ChatMessage chatMessage) {
+        if (!chatMessage.getReceiver().isChannel()) return false;
+        final String channelName = chatMessage.getReceiver().getName();
+        final String recipientWorld = recipient.getWorld().getName();
+        boolean hasWorldBinding = false;
+        for (Map.Entry<String, String> entry : worldChannelBindings.entrySet()) {
+            if (!entry.getValue().equalsIgnoreCase(channelName)) continue;
+            hasWorldBinding = true;
+            if (entry.getKey().equalsIgnoreCase(recipientWorld)) {
+                return false;
+            }
+        }
+        return hasWorldBinding;
     }
 
     @Override
@@ -501,6 +522,43 @@ public class ChannelManager extends RedisChatAPI {
     @Override
     public void removeVanishIntegration(VanishIntegration vanishIntegration) {
         plugin.getPlayerListManager().removeVanishIntegration(vanishIntegration);
+    }
+
+    @Override
+    public void setWorldChannel(@NotNull String worldName, @NotNull Channel channel) {
+        registerChannel(channel);
+        worldChannelBindings.put(normalizeWorldName(worldName), channel.getName());
+    }
+
+    @Override
+    public void setWorldChannel(@NotNull String worldName, @NotNull String channelName) {
+        worldChannelBindings.put(normalizeWorldName(worldName), channelName);
+    }
+
+    @Override
+    public Optional<String> getWorldChannel(@NotNull String worldName) {
+        return Optional.ofNullable(worldChannelBindings.get(normalizeWorldName(worldName)));
+    }
+
+    @Override
+    public void clearWorldChannel(@NotNull String worldName) {
+        worldChannelBindings.remove(normalizeWorldName(worldName));
+    }
+
+    public void applyWorldChannel(@NotNull Player player) {
+        getWorldChannel(player.getWorld().getName()).ifPresent(channelName -> {
+            if (getChannel(channelName, player).isEmpty()) {
+                if (plugin.config.debug) {
+                    plugin.getLogger().warning("World channel bound to missing channel: " + channelName);
+                }
+                return;
+            }
+            setActiveChannel(player.getName(), channelName);
+        });
+    }
+
+    private String normalizeWorldName(@NotNull String worldName) {
+        return worldName.toLowerCase(Locale.ROOT);
     }
 
     public List<Channel> getAllChannels() {

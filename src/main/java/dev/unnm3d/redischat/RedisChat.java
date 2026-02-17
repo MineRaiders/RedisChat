@@ -16,6 +16,7 @@ import dev.unnm3d.redischat.chat.RedisChatPAPI;
 import dev.unnm3d.redischat.chat.listeners.ChatListenerWithPriority;
 import dev.unnm3d.redischat.chat.listeners.JoinQuitManager;
 import dev.unnm3d.redischat.chat.listeners.UtilsListener;
+import dev.unnm3d.redischat.chat.listeners.WorldChannelListener;
 import dev.unnm3d.redischat.commands.*;
 import dev.unnm3d.redischat.datamanagers.RedisDataManager;
 import dev.unnm3d.redischat.datamanagers.sqlmanagers.MySQLDataManager;
@@ -163,6 +164,7 @@ public final class RedisChat extends JavaPlugin {
 
         //Update active channel on join and spy listener
         getServer().getPluginManager().registerEvents(new UtilsListener(this), this);
+        getServer().getPluginManager().registerEvents(new WorldChannelListener(this), this);
 
         //Mail section
         if (config.enableMails) {
