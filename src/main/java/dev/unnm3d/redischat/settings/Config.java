@@ -8,9 +8,11 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 @Configuration
@@ -19,7 +21,7 @@ public final class Config implements ConfigValidator {
     @Comment({"RedisChat storage type, can be REDIS , MySQL+PM or SQLITE+PM (PM means PluginMessages)",
             "If you use Mysql you need a proxy. The plugin will send the data to the proxy via pluginmessages",
             "If you use REDIS you don't need any proxy, THIS IS THE RECOMMENDED AND MOST EFFICIENT OPTION"})
-    public String dataMedium = DataType.SQLITE.keyName;
+    public String dataMedium = DataType.REDIS.keyName;
     @Comment("Leave password or user empty if you don't have a password or user")
     public RedisSettings redis = new RedisSettings("localhost",
             6379,
@@ -319,6 +321,48 @@ public final class Config implements ConfigValidator {
     @Override
     public boolean validateConfig() {
         boolean modified = false;
+        if (formats == null) {
+            formats = List.of();
+            modified = true;
+        }
+
+        boolean formatsChanged = false;
+        List<ChatFormat> normalizedFormats = new ArrayList<>(formats.size());
+        for (ChatFormat format : formats) {
+            if (format == null) {
+                normalizedFormats.add(defaultFormat);
+                formatsChanged = true;
+                continue;
+            }
+            String permission = format.permission() != null ? format.permission() : defaultFormat.permission();
+            String messageFormat = format.format() != null ? format.format() : defaultFormat.format();
+            String privateFormat = format.private_format() != null ? format.private_format() : defaultFormat.private_format();
+            String receivePrivateFormat = format.receive_private_format() != null ? format.receive_private_format() : defaultFormat.receive_private_format();
+            String mentionFormat = format.mention_format() != null ? format.mention_format() : defaultFormat.mention_format();
+            String linkFormat = format.link_format() != null ? format.link_format() : defaultFormat.link_format();
+            String joinFormat = format.join_format() != null ? format.join_format() : defaultFormat.join_format();
+            String quitFormat = format.quit_format() != null ? format.quit_format() : defaultFormat.quit_format();
+
+            if (!Objects.equals(permission, format.permission())
+                    || !Objects.equals(messageFormat, format.format())
+                    || !Objects.equals(privateFormat, format.private_format())
+                    || !Objects.equals(receivePrivateFormat, format.receive_private_format())
+                    || !Objects.equals(mentionFormat, format.mention_format())
+                    || !Objects.equals(linkFormat, format.link_format())
+                    || !Objects.equals(joinFormat, format.join_format())
+                    || !Objects.equals(quitFormat, format.quit_format())) {
+                formatsChanged = true;
+            }
+
+            normalizedFormats.add(new ChatFormat(permission, messageFormat, privateFormat, receivePrivateFormat,
+                    mentionFormat, linkFormat, joinFormat, quitFormat));
+        }
+
+        if (formatsChanged) {
+            formats = List.copyOf(normalizedFormats);
+            modified = true;
+        }
+
         formats.forEach(format -> {
             if (!format.format().contains("{message}")) {
                 Bukkit.getLogger().severe("Format " + format.permission() + " doesn't contain {message} placeholder");
