@@ -53,6 +53,7 @@ public class FilterManager {
         addFilter(new IgnoreFilter(plugin, plugin.filterSettings.ignore));
         addFilter(new MutedChannelFilter(plugin, plugin.filterSettings.mutedChannel));
         addFilter(new TagFilter(plugin, plugin.filterSettings.tags));
+        addFilter(new LinkFilter(plugin, plugin.filterSettings.links));
         addFilter(new WordBlacklistFilter(plugin, plugin.filterSettings.words));
         for (AbstractFilter<? extends FiltersConfig.FilterSettings> registeredFilter : registeredFilters) {
             plugin.getLogger().info("Registered filter: " + registeredFilter.getName());

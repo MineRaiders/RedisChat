@@ -24,7 +24,8 @@ public enum DefaultSettings {
     MUTED_CHANNEL(new FiltersConfig.FilterSettings(true, 5, Set.of(AudienceType.CHANNEL), Set.of())),
     TAGS(new FiltersConfig.FilterSettings(true, 9, Set.of(), Set.of())),
     WORDS(new WordBlacklistFilter.WordBlacklistFilterProperties()),
-    SPAM(new FiltersConfig.FilterSettings(true, 1, Set.of(), Set.of()));
+    SPAM(new FiltersConfig.FilterSettings(true, 1, Set.of(), Set.of())),
+    LINKS(new FiltersConfig.FilterSettings(true, 4, Set.of(), Set.of()));
 
     private final FiltersConfig.FilterSettings filterSettings;
 
