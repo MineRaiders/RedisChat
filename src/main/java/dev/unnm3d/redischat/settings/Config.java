@@ -317,10 +317,47 @@ public final class Config implements ConfigValidator {
             "The first element is a RedisChat channel, the second one is a Discord channel id",
             "You can find the Discord channel id by right clicking on the channel and clicking on 'Copy ID'"})
     public SpicordSettings spicord = new SpicordSettings(true, true, "<blue>[Discord]</blue> %role% %username% » {message}", "**%channel%** %sender% » {message}", Map.of("public", "1127207189547847740"));
+    @Comment({
+            "World channels (disabled by default).",
+            "When enabled, players will be switched to the channel bound to their current world.",
+            "Messages sent in a world-bound channel are only delivered to players in that world.",
+            "If autoCreate is enabled, missing channels will be created using the template."
+    })
+    public WorldChannelSettings worldChannels = new WorldChannelSettings(
+            false,
+            false,
+            Map.of(),
+            new WorldChannelTemplate(
+                    "<gold>[%world%]</gold>",
+                    "<gray>[%world%]</gray> {message}",
+                    5,
+                    3,
+                    true,
+                    true,
+                    ""
+            )
+    );
 
     @Override
     public boolean validateConfig() {
         boolean modified = false;
+        if (worldChannels == null) {
+            worldChannels = new WorldChannelSettings(
+                    false,
+                    false,
+                    Map.of(),
+                    new WorldChannelTemplate(
+                            "<gold>[%world%]</gold>",
+                            "<gray>[%world%]</gray> {message}",
+                            5,
+                            3,
+                            true,
+                            true,
+                            ""
+                    )
+            );
+            modified = true;
+        }
         if (formats == null) {
             formats = List.of();
             modified = true;
@@ -481,6 +518,25 @@ public final class Config implements ConfigValidator {
             String chatFormat,
             String discordFormat,
             Map<String, String> spicordChannelLink
+    ) {
+    }
+
+    public record WorldChannelSettings(
+            boolean enabled,
+            boolean autoCreate,
+            Map<String, String> bindings,
+            WorldChannelTemplate template
+    ) {
+    }
+
+    public record WorldChannelTemplate(
+            String displayName,
+            String format,
+            int rateLimit,
+            int rateLimitPeriod,
+            boolean filtered,
+            boolean shownByDefault,
+            String notificationSound
     ) {
     }
 

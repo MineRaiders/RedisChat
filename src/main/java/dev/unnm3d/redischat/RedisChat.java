@@ -148,6 +148,7 @@ public final class RedisChat extends JavaPlugin {
 
 
         this.channelManager = new ChannelManager(this);
+        this.channelManager.applyWorldChannelConfig(this.config.worldChannels);
         loadCommandAPICommand(new ChannelCommand(this).getCommand());
         //loadUniformCommand(new ChannelUniformCommand(this));
         final TalkOnCommand talkOnCommand = new TalkOnCommand(this);

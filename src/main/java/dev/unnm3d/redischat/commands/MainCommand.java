@@ -58,6 +58,7 @@ public class MainCommand {
                     }
                     plugin.getAnnouncerManager().reload();
                     plugin.getChannelManager().updateChannels();
+                    plugin.getChannelManager().applyWorldChannelConfig(plugin.config.worldChannels);
                     plugin.getChannelManager().getMuteManager().reload();
                     plugin.getChannelManager().getFilterManager().initializeDefaultFilters();
                     plugin.getComponentProvider().sendMessage(commandExecutor.sender(), "<green>Config reloaded");

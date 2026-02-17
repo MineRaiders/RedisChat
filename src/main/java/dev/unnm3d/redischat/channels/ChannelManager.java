@@ -16,6 +16,7 @@ import dev.unnm3d.redischat.chat.filters.FilterManager;
 import dev.unnm3d.redischat.chat.filters.FilterResult;
 import dev.unnm3d.redischat.mail.MailGUIManager;
 import dev.unnm3d.redischat.moderation.MuteManager;
+import dev.unnm3d.redischat.settings.Config;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -559,6 +560,68 @@ public class ChannelManager extends RedisChatAPI {
 
     private String normalizeWorldName(@NotNull String worldName) {
         return worldName.toLowerCase(Locale.ROOT);
+    }
+
+    public void applyWorldChannelConfig(@Nullable Config.WorldChannelSettings settings) {
+        worldChannelBindings.clear();
+        if (settings == null || !settings.enabled()) {
+            return;
+        }
+
+        Map<String, String> bindings = settings.bindings();
+        if (bindings == null || bindings.isEmpty()) {
+            return;
+        }
+
+        Config.WorldChannelTemplate template = settings.template();
+        for (Map.Entry<String, String> entry : bindings.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            final String worldName = entry.getKey();
+            final String channelName = entry.getValue().trim();
+            if (channelName.isEmpty()) {
+                continue;
+            }
+
+            if (settings.autoCreate()) {
+                boolean isDefaultChannel = KnownChatEntities.GENERAL_CHANNEL.toString().equalsIgnoreCase(channelName)
+                        || KnownChatEntities.STAFFCHAT_CHANNEL_NAME.toString().equalsIgnoreCase(channelName);
+                if (!isDefaultChannel && getRegisteredChannel(channelName).isEmpty()) {
+                    Config.WorldChannelTemplate activeTemplate = template != null ? template : new Config.WorldChannelTemplate(
+                            "<gold>[%world%]</gold>",
+                            "<gray>[%world%]</gray> {message}",
+                            5,
+                            3,
+                            true,
+                            true,
+                            ""
+                    );
+                    String displayName = activeTemplate.displayName()
+                            .replace("%world%", worldName)
+                            .replace("%channel%", channelName);
+                    String format = activeTemplate.format()
+                            .replace("%world%", worldName)
+                            .replace("%channel%", channelName);
+                    String notificationSound = activeTemplate.notificationSound();
+                    if (notificationSound != null && notificationSound.isBlank()) {
+                        notificationSound = null;
+                    }
+                    Channel channel = Channel.builder(channelName)
+                            .displayName(displayName)
+                            .format(format)
+                            .rateLimit(activeTemplate.rateLimit())
+                            .rateLimitPeriod(activeTemplate.rateLimitPeriod())
+                            .filtered(activeTemplate.filtered())
+                            .shownByDefault(activeTemplate.shownByDefault())
+                            .notificationSound(notificationSound)
+                            .build();
+                    registerChannel(channel);
+                }
+            }
+
+            worldChannelBindings.put(normalizeWorldName(worldName), channelName);
+        }
     }
 
     public List<Channel> getAllChannels() {
