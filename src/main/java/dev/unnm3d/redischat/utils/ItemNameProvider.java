@@ -1,5 +1,7 @@
 package dev.unnm3d.redischat.utils;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -26,20 +28,35 @@ public class ItemNameProvider {
     }
 
     public String getItemName(ItemStack itemStack) {
-        if (getItemNameMethod == null || !useItemName)
-            return itemStack.getItemMeta().getDisplayName();
+        final ItemMeta itemMeta = itemStack.getItemMeta();
+        if (itemMeta == null) {
+            return "";
+        }
+        if (getItemNameMethod == null || !useItemName) {
+            return itemMeta.getDisplayName();
+        }
         try {
-            return (String) getItemNameMethod.invoke(itemStack.getItemMeta());
+            Object value = getItemNameMethod.invoke(itemMeta);
+            return switch (value) {
+                case null -> itemMeta.getDisplayName();
+                case Component component -> LegacyComponentSerializer.legacySection().serialize(component);
+                case String string -> string;
+                default -> value.toString();
+            };
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
 
     public boolean hasItemName(ItemStack itemMeta) {
+        if (itemMeta.getItemMeta() == null) {
+            return false;
+        }
         if (hasItemNameMethod == null || !useItemName)
             return itemMeta.getItemMeta().hasDisplayName();
         try {
-            return (boolean) hasItemNameMethod.invoke(itemMeta.getItemMeta());
+            Object value = hasItemNameMethod.invoke(itemMeta.getItemMeta());
+            return value instanceof Boolean bool ? bool : itemMeta.getItemMeta().hasDisplayName();
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
