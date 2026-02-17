@@ -92,6 +92,12 @@ permissions:
   redischat.useformatting:
     description: Allows to send formatted messages
     default: op
+  redischat.link.send:
+    description: Allows to send links in chat
+    default: op
+  redischat.link.click:
+    description: Allows links to be transformed into clickable links
+    default: op
   redischat.broadcast:
     description: Allows to use the /broadcast command
     default: op
@@ -152,6 +158,9 @@ permissions:
   redischat.bypassfilter.word_blacklist:
     description: Allows to bypass the word blacklist filter
     default: false
+  redischat.bypassfilter.link:
+    description: Allows to bypass the link filter
+    default: false
   redischat.bypassfilter.permission:
     description: Allows to bypass the permission filter
     default: false
@@ -173,6 +182,8 @@ permissions:
       - redischat.staffchat
       - redischat.channel.staffchat
       - redischat.usedangeroustags
+      - redischat.link.send
+      - redischat.link.click
       - redischat.chatas
       - redischat.mutechannel
       - redischat.setchatplaceholder
@@ -185,10 +196,6 @@ permissions:
     children:
       - redischat.message
       - redischat.ignore
-      - redischat.use_emoji
-      - redischat.showitem
-      - redischat.showinv
-      - redischat.showenderchest
       - redischat.channel.public
       - redischat.listchannel
       - redischat.mail.write

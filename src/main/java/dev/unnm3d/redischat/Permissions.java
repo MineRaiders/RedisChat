@@ -20,6 +20,8 @@ public enum Permissions {
     USE_INVENTORY("redischat.showinv"),
     USE_ENDERCHEST("redischat.showenderchest"),
     USE_EMOJI_PLACEHOLDERS("redischat.use_emoji"),
+    SEND_LINKS("redischat.link.send"),
+    CLICKABLE_LINKS("redischat.link.click"),
     BROADCAST("redischat.broadcast"),
     ANNOUNCER("redischat.announcer"),
     CLEARCHAT("redischat.clearchat"),
