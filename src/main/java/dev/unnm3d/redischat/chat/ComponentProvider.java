@@ -84,6 +84,27 @@ public class ComponentProvider {
         return parse(player, text, true, true, true, tagResolvers);
     }
 
+    public @NotNull Component parseWithSafeReplacements(@Nullable CommandSender player, @NotNull String text, @NotNull Map<String, String> replacements) {
+        if (replacements.isEmpty()) {
+            return parse(player, text, true, false, false, this.standardTagResolver);
+        }
+        String workingText = text;
+        Map<String, String> tokens = new LinkedHashMap<>();
+        int index = 0;
+        for (Map.Entry<String, String> entry : replacements.entrySet()) {
+            String token = "__rc_replace_" + index++ + "__";
+            tokens.put(token, entry.getValue());
+            workingText = workingText.replace(entry.getKey(), token);
+        }
+        Component component = parse(player, workingText, true, false, false, this.standardTagResolver);
+        for (Map.Entry<String, String> entry : tokens.entrySet()) {
+            component = component.replaceText(rTextBuilder -> rTextBuilder
+                    .matchLiteral(entry.getKey())
+                    .replacement(Component.text(entry.getValue())));
+        }
+        return component;
+    }
+
     public @NotNull Component parse(@Nullable CommandSender player, @NotNull String text, boolean parsePlaceholders, boolean parseMentions, boolean parseLinks, @NotNull TagResolver... tagResolvers) {
         Map.Entry<String, Component> parsedLinks = new AbstractMap.SimpleEntry<>(null, null);
 

@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -46,12 +47,9 @@ public class WordBlacklistFilter extends AbstractFilter<WordBlacklistFilter.Word
 
         if (filterSettings.blockCensoredMessage && !forbiddenWords.isEmpty()) {
             return new FilterResult(message, true, Optional.of(
-                    plugin.getComponentProvider().parse(sender,
-                            plugin.messages.messageContainsBadWords
-                                    .replace("%words%", String.join(",", forbiddenWords)),
-                            true,
-                            false,
-                            false)
+                    plugin.getComponentProvider().parseWithSafeReplacements(sender,
+                            plugin.messages.messageContainsBadWords,
+                            Map.of("%words%", String.join(",", forbiddenWords)))
             ));
         }
         //Set the sanitized message

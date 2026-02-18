@@ -10,6 +10,7 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -52,12 +53,9 @@ public class LinkFilter extends AbstractFilter<FiltersConfig.FilterSettings> {
 
         if (!blockedLinks.isEmpty()) {
             return new FilterResult(message, true, Optional.of(
-                    plugin.getComponentProvider().parse(sender,
-                            plugin.messages.linkNotAllowed
-                                    .replace("%links%", String.join(", ", blockedLinks)),
-                            true,
-                            false,
-                            false)
+                    plugin.getComponentProvider().parseWithSafeReplacements(sender,
+                            plugin.messages.linkNotAllowed,
+                            Map.of("%links%", String.join(", ", blockedLinks)))
             ));
         }
 

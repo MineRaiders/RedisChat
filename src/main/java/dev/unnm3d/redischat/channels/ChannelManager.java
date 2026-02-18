@@ -211,6 +211,11 @@ public class ChannelManager extends RedisChatAPI {
         if (!chatMessage.getSender().isDiscord())
             plugin.getDiscordHook().sendDiscordMessage(chatMessage);
 
+        if (isLocalChannel(currentChannel.getName())) {
+            sendGenericChat(chatMessage);
+            return;
+        }
+
         if (currentChannel.getProximityDistance() >= 0) {// Send to local server
             sendGenericChat(chatMessage);
             return;
@@ -479,6 +484,10 @@ public class ChannelManager extends RedisChatAPI {
             }
         }
         return false;
+    }
+
+    private boolean isLocalChannel(@NotNull String channelName) {
+        return localChannels.containsKey(channelName);
     }
 
     @Override

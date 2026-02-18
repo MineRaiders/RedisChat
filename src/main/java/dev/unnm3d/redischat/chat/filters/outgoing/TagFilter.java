@@ -11,6 +11,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 
@@ -38,12 +39,9 @@ public class TagFilter extends AbstractFilter<FiltersConfig.FilterSettings> {
         final Matcher m = PlaceholderAPI.getPlaceholderPattern().matcher(chatMessage.getContent());
         if (m.find()) {
             return new FilterResult(chatMessage, true, Optional.of(
-                    plugin.getComponentProvider().parse(sender,
-                            plugin.messages.messageContainsBadWords
-                                    .replace("%words%", m.group()),
-                            true,
-                            false,
-                            false)
+                    plugin.getComponentProvider().parseWithSafeReplacements(sender,
+                            plugin.messages.messageContainsBadWords,
+                            Map.of("%words%", m.group()))
             ));
         }
 
