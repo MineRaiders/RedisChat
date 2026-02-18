@@ -455,7 +455,7 @@ public class ChannelManager extends RedisChatAPI {
             return channelFormat;
         }
         if (worldChannelSettings.useWorldFormats()) {
-            return wrapChannelFormat(channelFormat, plugin.config.getWorldChatFormat(player).format());
+            return wrapChannelFormat(channelFormat, plugin.config.getWorldChatMessageFormat(player));
         }
         if (worldChannelSettings.usePlayerFormats()) {
             return wrapChannelFormat(channelFormat, plugin.config.getChatFormat(player).format());
