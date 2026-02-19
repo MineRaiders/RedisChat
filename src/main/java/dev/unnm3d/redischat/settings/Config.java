@@ -56,6 +56,8 @@ public final class Config implements ConfigValidator {
     @Comment({"Use RedisChat for join and quit messages",
             "The quit message will be delayed because it might be a early reconnection to one of the servers using RedisChat"})
     public boolean enableQuitJoinMessages = true;
+    @Comment("If true, join/quit messages are only sent on the local server (no Redis broadcast)")
+    public boolean joinQuitLocalOnly = false;
     @Comment("If true, RedisChat will log public chat messages")
     public boolean chatLogging = false;
     @Comment({"Here you can decide your chat format", "Permission format is overridden on descending order", "(if a player has default and vip, if default is the first element, vip will be ignored)"})

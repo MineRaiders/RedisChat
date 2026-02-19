@@ -31,24 +31,26 @@ public class JoinQuitManager implements Listener {
 
         if (redisChat.getPlayerListManager().isVanished(joinEvent.getPlayer())) return;
 
-        //Join event happens at the same time as the quit event in the other server (we need to delay it)
-        RedisChat.getScheduler().runTaskLater(() ->
-                redisChat.getDataManager().sendRejoin(joinEvent.getPlayer().getName()), redisChat.config.rejoinSendDelay / 50L);
+        if (!redisChat.config.joinQuitLocalOnly) {
+            //Join event happens at the same time as the quit event in the other server (we need to delay it)
+            RedisChat.getScheduler().runTaskLater(() ->
+                    redisChat.getDataManager().sendRejoin(joinEvent.getPlayer().getName()), redisChat.config.rejoinSendDelay / 50L);
+        }
 
-        if (redisChat.getPlayerListManager().getPlayerList(joinEvent.getPlayer())
+        if (!redisChat.config.joinQuitLocalOnly
+                && redisChat.getPlayerListManager().getPlayerList(joinEvent.getPlayer())
                 .contains(joinEvent.getPlayer().getName())) return;
 
         if (!joinEvent.getPlayer().hasPermission(Permissions.JOIN_QUIT.getPermission())) return;
 
         if (!joinEvent.getPlayer().hasPlayedBefore() && !redisChat.config.first_join_message.isEmpty()) {
-            redisChat.getDataManager().sendChatMessage(new ChatMessage(
-                    MiniMessage.miniMessage().serialize(redisChat.getComponentProvider().parse(
-                            joinEvent.getPlayer(),
-                            redisChat.config.first_join_message,
-                            true,
-                            false,
-                            false)), Permissions.JOIN_QUIT.getPermission()
-            ));
+            final String parsedFirstJoinMessage = MiniMessage.miniMessage().serialize(redisChat.getComponentProvider().parse(
+                    joinEvent.getPlayer(),
+                    redisChat.config.first_join_message,
+                    true,
+                    false,
+                    false));
+            sendJoinQuitMessage(parsedFirstJoinMessage);
             return;
         }
 
@@ -62,14 +64,13 @@ public class JoinQuitManager implements Listener {
         }
 
         //Send join message to everyone
-        redisChat.getDataManager().sendChatMessage(new ChatMessage(
-                MiniMessage.miniMessage().serialize(redisChat.getComponentProvider().parse(
-                        joinEvent.getPlayer(),
-                        chatFormat.join_format(),
-                        true,
-                        false,
-                        false)), Permissions.JOIN_QUIT.getPermission()
-        ));
+        final String parsedJoinMessage = MiniMessage.miniMessage().serialize(redisChat.getComponentProvider().parse(
+                joinEvent.getPlayer(),
+                chatFormat.join_format(),
+                true,
+                false,
+                false));
+        sendJoinQuitMessage(parsedJoinMessage);
 
     }
 
@@ -96,6 +97,11 @@ public class JoinQuitManager implements Listener {
                 false,
                 false));
 
+        if (redisChat.config.joinQuitLocalOnly) {
+            sendJoinQuitMessage(parsedQuitMessage);
+            return;
+        }
+
         findPlayerRequests.put(quitEvent.getPlayer().getName(),
                 craftRejoinFuture(quitEvent.getPlayer().getName(), parsedQuitMessage));
 
@@ -116,5 +122,14 @@ public class JoinQuitManager implements Listener {
     public void rejoinRequest(String playerName) {
         CompletableFuture<Void> future = findPlayerRequests.remove(playerName);
         if (future != null) future.complete(null);
+    }
+
+    private void sendJoinQuitMessage(String parsedMessage) {
+        ChatMessage message = new ChatMessage(parsedMessage, Permissions.JOIN_QUIT.getPermission());
+        if (redisChat.config.joinQuitLocalOnly) {
+            redisChat.getChannelManager().sendGenericChat(message);
+        } else {
+            redisChat.getDataManager().sendChatMessage(message);
+        }
     }
 }
